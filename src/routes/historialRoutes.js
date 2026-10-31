@@ -1,20 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const HistorialInternacion = require('../models/historialInternacion');
 const { requireAuth } = require('../middleware/auth');
+const historialController = require('../controllers/historialController');
 
 router.use(requireAuth);
-
-router.get('/', async (req, res) => {
-    try {
-        const historial = await HistorialInternacion.findAll({
-            order: [['fecha_alta', 'DESC']]
-        });
-        res.json(historial || []);
-    } catch (err) {
-        console.error("Error al obtener el historial:", err.message);
-        res.status(500).json({ error: 'No se pudo obtener el historial.' });
-    }
-});
+router.get('/', historialController.listarInternaciones);
 
 module.exports = router;

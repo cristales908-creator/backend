@@ -23,4 +23,11 @@ const DIETAS = [
 
 const COMIDAS = ['Desayuno', 'Almuerzo', 'Merienda', 'Cena'];
 
-module.exports = { COMIDAS, DIETAS, PATOLOGIAS };
+function normalizeDiet(value) {
+    if (typeof value !== 'string') return null;
+
+    const normalized = value.trim().replace(/^dieta\s+/i, '').toLocaleLowerCase('es');
+    return DIETAS.find(dieta => dieta.toLocaleLowerCase('es') === normalized) || null;
+}
+
+module.exports = { COMIDAS, DIETAS, PATOLOGIAS, normalizeDiet };

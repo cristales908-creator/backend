@@ -1,6 +1,9 @@
 const crypto = require('node:crypto');
 
-const sessionSecret = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
+const sessionSecret = process.env.SESSION_SECRET;
+if (!sessionSecret || Buffer.byteLength(sessionSecret) < 32 || sessionSecret === 'replace-with-a-long-random-secret') {
+    throw new Error('Configura SESSION_SECRET con al menos 32 bytes aleatorios antes de iniciar el servidor.');
+}
 const TOKEN_LIFETIME_SECONDS = 8 * 60 * 60;
 
 function sign(value) {

@@ -22,6 +22,7 @@ backend/
     app.js                  Configuración de Express, relaciones y montaje de routers
     config/database.js      Conexión a PostgreSQL y carga de backend/.env
     middleware/auth.js      Tokens de sesión y autorización por rol
+    controllers/            Lógica de autenticación y operaciones de cada módulo
     models/                 Entidades y tablas Sequelize
     routes/                 Endpoints agrupados por área funcional
     utils/
@@ -62,7 +63,7 @@ Campos importantes de `consumos_menu`:
 
 1. `src/app.js` carga variables de entorno, crea Express, declara asociaciones y monta cada router bajo `/api`.
 2. Los routers funcionales pasan por `requireAuth`; las operaciones de escritura agregan `allowRoles` según el perfil.
-3. El router valida el cuerpo y consulta o modifica modelos Sequelize.
+3. Las rutas asocian cada método y URL con el controlador correspondiente; los controladores validan la petición y usan modelos Sequelize.
 4. Las operaciones que deben mantenerse consistentes, como asignaciones o cambios de internación, usan transacciones.
 5. Sequelize convierte las operaciones a consultas PostgreSQL y devuelve el resultado al cliente como JSON.
 
@@ -74,6 +75,8 @@ Campos importantes de `consumos_menu`:
 - Las rutas privadas esperan `Authorization: Bearer <token>`.
 - Nutricionista crea menús; Enfermera y Nutricionista administran pacientes, internaciones, stock y asignaciones. Cocina consulta el panel y el resumen.
 - `SESSION_SECRET` y `STAFF_REGISTRATION_KEY` son variables privadas de `backend/.env`; no se documentan sus valores ni se sube ese archivo al repositorio.
+- Login y registro aplican límites de intentos por IP. El almacenamiento predeterminado es local al proceso; despliegues con varias instancias requieren un almacén compartido.
+- El backend exige `SESSION_SECRET` de al menos 32 bytes y rechaza el valor de ejemplo. La clave de registro también debe ser privada y tener al menos 32 caracteres.
 
 ## Routers principales
 
@@ -114,4 +117,4 @@ npm test
 
 ## Sincronización del esquema
 
-Actualmente `src/app.js` ejecuta `sequelize.sync({ alter: true })` al iniciar y elimina una restricción única antigua de `consumos`. Esto permite sincronizar el esquema durante el desarrollo, pero puede modificar tablas automáticamente. Para producción, conviene reemplazarlo por migraciones versionadas de Sequelize y revisar cada cambio de esquema antes de aplicarlo.
+Al iniciar, Umzug aplica las migraciones versionadas de `src/migrations` y registra sus nombres en `SequelizeMeta`; el servidor no ejecuta `sequelize.sync({ alter: true })`. La migración inicial crea las tablas ausentes de forma idempotente y la siguiente elimina una restricción única obsoleta de `consumos`. Los cambios futuros deben añadirse como migraciones nuevas y respaldarse antes de aplicarlos. La conexión configurada con `DATABASE_URL` valida certificados TLS; para una CA privada, proporciona el PEM en `DB_SSL_CA`.

@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const { Umzug, SequelizeStorage } = require('umzug');
 const sequelize = require('./config/database');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
@@ -57,18 +58,27 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+const migrationGlob = path.join(__dirname, 'migrations', '*.js').replace(/\\/g, '/');
 
-// ==========================================
-// PASO 3: SINCRONIZAR Y ARRANCAR EL SERVIDOR
-// ==========================================
-sequelize.sync({ alter: true })
-    .then(async () => {
-        await sequelize.query('ALTER TABLE "consumos" DROP CONSTRAINT IF EXISTS "consumos_pacienteId_alimentoId_key"');
-        console.log('✅ Base de datos sincronizada, relaciones aplicadas y conexión exitosa.');
+const migrations = new Umzug({
+    migrations: { glob: migrationGlob },
+    context: sequelize.getQueryInterface(),
+    storage: new SequelizeStorage({ sequelize }),
+    logger: console
+});
+
+async function startServer() {
+    try {
+        await migrations.up();
+        console.log('✅ Migraciones aplicadas y conexión a la base de datos exitosa.');
         app.listen(PORT, () => {
             console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
         });
-    })
-    .catch(err => {
+    } catch (err) {
         console.error('❌ Error crítico al conectar o sincronizar la base de datos:', err);
-    });
+        await sequelize.close().catch(() => {});
+        process.exitCode = 1;
+    }
+}
+
+startServer();

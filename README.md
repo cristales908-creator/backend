@@ -11,18 +11,20 @@ API REST de gestión hospitalaria con Node.js, Express, Sequelize y PostgreSQL.
    npm install
    ```
 
-3. Copia `.env.example` a `.env` y completa la configuración local. No subas `.env` a GitHub.
+3. Copia `.env.example` a `.env` y completa la configuración local. Genera valores aleatorios de al menos 32 bytes para `SESSION_SECRET` y `STAFF_REGISTRATION_KEY`; los valores de ejemplo son rechazados. No subas `.env` a GitHub.
+
+   Puedes generar un secreto con `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. Si PostgreSQL remoto usa una autoridad certificadora propia, configura su certificado PEM en `DB_SSL_CA`.
 4. Inicia el servidor:
 
    ```powershell
    npm start
    ```
 
-La API escucha en el puerto definido por `PORT` (3000 por defecto). Las pruebas se ejecutan con `npm test`.
+La API escucha en el puerto definido por `PORT` (3000 por defecto). Las pruebas se ejecutan con `npm test`. Login y registro limitan los intentos por dirección IP; para varias instancias del backend, configura un almacenamiento compartido para esos límites.
 
 ## Base de datos
 
-Al iniciar, `src/app.js` ejecuta `sequelize.sync({ alter: true })` y una consulta de compatibilidad para retirar una restricción antigua de `consumos`. Esto modifica el esquema automáticamente; antes de usar datos reales en producción, conviene sustituirlo por migraciones versionadas y respaldar la base.
+Al iniciar, Umzug aplica las migraciones de `src/migrations` y guarda las versiones ejecutadas en `SequelizeMeta`. La migración inicial crea las tablas que falten sin alterar las existentes; la siguiente retira una restricción antigua de `consumos`. Agrega cambios futuros del esquema mediante nuevas migraciones revisadas y respaldos, no mediante cambios automáticos del modelo.
 
 ## Seguridad
 
