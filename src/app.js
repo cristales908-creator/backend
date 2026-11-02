@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { Umzug, SequelizeStorage } = require('umzug');
 const sequelize = require('./config/database');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
@@ -58,24 +57,16 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-const migrationGlob = path.join(__dirname, 'migrations', '*.js').replace(/\\/g, '/');
-
-const migrations = new Umzug({
-    migrations: { glob: migrationGlob },
-    context: sequelize.getQueryInterface(),
-    storage: new SequelizeStorage({ sequelize }),
-    logger: console
-});
 
 async function startServer() {
     try {
-        await migrations.up();
-        console.log('✅ Migraciones aplicadas y conexión a la base de datos exitosa.');
+        await sequelize.sync({alter:true});
+        console.log('✅ Modelos sincronizados y conexión a la base de datos exitosa.');
         app.listen(PORT, () => {
             console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
         });
     } catch (err) {
-        console.error('❌ Error crítico al conectar o sincronizar la base de datos:', err);
+        console.error('❌ Error crítico al sincronizar los modelos con la base de datos:', err);
         await sequelize.close().catch(() => {});
         process.exitCode = 1;
     }

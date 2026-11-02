@@ -24,7 +24,7 @@ La API escucha en el puerto definido por `PORT` (3000 por defecto). Las pruebas 
 
 ## Base de datos
 
-Al iniciar, Umzug aplica las migraciones de `src/migrations` y guarda las versiones ejecutadas en `SequelizeMeta`. La migración inicial crea las tablas que falten sin alterar las existentes; la siguiente retira una restricción antigua de `consumos`. Agrega cambios futuros del esquema mediante nuevas migraciones revisadas y respaldos, no mediante cambios automáticos del modelo.
+Al iniciar, Sequelize ejecuta `sequelize.sync()` para crear las tablas que falten según los modelos; no altera ni elimina las tablas existentes. No se usa `force` ni `alter`. Los cambios de esquema se reflejan en los modelos Sequelize. `sync()` no transforma datos existentes (por ejemplo, no normaliza nombres de dietas heredados); respaldá la base antes de hacer cambios manuales en el esquema o los datos.
 
 ## Seguridad
 

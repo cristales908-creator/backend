@@ -5,13 +5,17 @@ const { spawnSync } = require('node:child_process');
 const { once } = require('node:events');
 const path = require('node:path');
 const express = require('express');
-const { Umzug } = require('umzug');
 
 process.env.SESSION_SECRET = 'test-session-secret-with-at-least-32-bytes';
 
 const { allowRoles, createToken, verifyToken } = require('../src/middleware/auth');
 const { createAuthRateLimiter } = require('../src/middleware/authRateLimit');
 const { hashPassword, verifyPassword } = require('../src/utils/password');
+const Usuario = require('../src/models/usuario');
+const Paciente = require('../src/models/paciente');
+const HistorialInternacion = require('../src/models/historialInternacion');
+const Menu = require('../src/models/menu');
+const ConsumoMenu = require('../src/models/consumoMenu');
 
 test('password hashes verify and reject incorrect passwords', async () => {
 	const password = 'hospital-password-123';
@@ -87,22 +91,20 @@ test('auth rate limiter returns 429 after the configured limit', async t => {
 	assert.deepEqual(statuses, [401, 401, 429]);
 });
 
-test('Umzug discovers the versioned schema migrations', async () => {
-	const glob = path.join(__dirname, '../src/migrations/*.js').replace(/\\/g, '/');
-	const runner = new Umzug({
-		migrations: { glob },
-		context: {},
-		storage: {
-			executed: async () => [],
-			logMigration: async () => {},
-			unlogMigration: async () => {}
-		}
-	});
-	const pending = await runner.pending();
-
-	assert.deepEqual(pending.map(migration => migration.name).sort(), [
-		'202610310001-create-initial-schema.js',
-		'202610310002-remove-legacy-consumo-unique.js',
-		'202610310003-normalize-legacy-diets.js'
-	]);
+test('Sequelize models map core tables and preserve required unique indexes', () => {
+	assert.equal(Usuario.getTableName(), 'usuarios_sistema');
+	assert.equal(Paciente.getTableName(), 'pacientes');
+	assert.equal(Paciente.associations.historialInternaciones.target, HistorialInternacion);
+	assert.equal(HistorialInternacion.associations.paciente.target, Paciente);
+	assert.equal(HistorialInternacion.associations.paciente.foreignKey, 'paciente_id');
+	assert.equal(Menu.getTableName(), 'menus');
+	assert.equal(ConsumoMenu.getTableName(), 'consumos_menu');
+	assert.deepEqual(
+		Menu.options.indexes.filter(index => index.unique).map(index => index.fields),
+		[['nombre', 'dieta']]
+	);
+	assert.deepEqual(
+		ConsumoMenu.options.indexes.filter(index => index.unique).map(index => index.fields),
+		[['pacienteId', 'fecha', 'comida']]
+	);
 });

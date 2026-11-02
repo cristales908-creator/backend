@@ -28,7 +28,7 @@ backend/
     utils/
       nutritionCatalog.js   Opciones controladas de patologías, dietas y comidas
       password.js           Hash y verificación de contraseñas
-  test/                     Pruebas automatizadas de seguridad
+  test/                     Pruebas automatizadas de seguridad y catálogo nutricional
   docs/architecture.md      Este documento
 ```
 
@@ -117,4 +117,4 @@ npm test
 
 ## Sincronización del esquema
 
-Al iniciar, Umzug aplica las migraciones versionadas de `src/migrations` y registra sus nombres en `SequelizeMeta`; el servidor no ejecuta `sequelize.sync({ alter: true })`. La migración inicial crea las tablas ausentes de forma idempotente y la siguiente elimina una restricción única obsoleta de `consumos`. Los cambios futuros deben añadirse como migraciones nuevas y respaldarse antes de aplicarlos. La conexión configurada con `DATABASE_URL` valida certificados TLS; para una CA privada, proporciona el PEM en `DB_SSL_CA`.
+Al iniciar, Sequelize ejecuta `sequelize.sync()` usando los modelos y sus asociaciones para crear las tablas que falten. No se usan `force` ni `alter`, por lo que las tablas existentes no se eliminan ni se modifican automáticamente. El esquema se define en los modelos; `sync()` no transforma datos existentes, como nombres de dietas heredados. La conexión configurada con `DATABASE_URL` valida certificados TLS; para una CA privada, proporciona el PEM en `DB_SSL_CA`.

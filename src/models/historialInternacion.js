@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
+const Paciente = require('./paciente');
 
 const HistorialInternacion = sequelize.define('HistorialInternacion', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -17,5 +18,11 @@ const HistorialInternacion = sequelize.define('HistorialInternacion', {
 const Usuario = require('./usuario'); // Asegúrate de importar tu modelo de usuario
 Usuario.hasMany(HistorialInternacion, { foreignKey: 'usuarioId' });
 HistorialInternacion.belongsTo(Usuario, { foreignKey: 'usuarioId' })
+Paciente.hasMany(HistorialInternacion, { foreignKey: 'paciente_id', as: 'historialInternaciones' });
+HistorialInternacion.belongsTo(Paciente, {
+    foreignKey: 'paciente_id',
+    as: 'paciente',
+    onDelete: 'SET NULL'
+});
 
 module.exports = HistorialInternacion;
