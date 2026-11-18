@@ -62,7 +62,7 @@ async function listarAsignaciones(req, res) {
         const asignaciones = await ConsumoMenu.findAll({
             where: { fecha },
             include: [
-                { model: Paciente, as: 'paciente', attributes: ['id', 'nombre', 'apellido', 'dieta_asignada', 'tiene_acompanante'] },
+                { model: Paciente, as: 'paciente', attributes: ['id', 'nombre', 'apellido', 'habitacion', 'dieta_asignada', 'tiene_acompanante'] },
                 { model: Menu, as: 'menu', attributes: ['id', 'nombre', 'dieta'] }
             ],
             order: [['comida', 'ASC'], ['id', 'ASC']]

@@ -10,9 +10,11 @@ process.env.SESSION_SECRET = 'test-session-secret-with-at-least-32-bytes';
 
 const { allowRoles, createToken, verifyToken } = require('../src/middleware/auth');
 const { createAuthRateLimiter } = require('../src/middleware/authRateLimit');
+const alimentoController = require('../src/controllers/alimentoController');
 const { hashPassword, verifyPassword } = require('../src/utils/password');
 const Usuario = require('../src/models/usuario');
 const Paciente = require('../src/models/paciente');
+const Alimento = require('../src/models/alimento');
 const HistorialInternacion = require('../src/models/historialInternacion');
 const Menu = require('../src/models/menu');
 const ConsumoMenu = require('../src/models/consumoMenu');
@@ -74,6 +76,122 @@ test('role guard allows only configured roles', () => {
 	assert.equal(nextCalled, true);
 });
 
+test('patient registration requires a room number', async () => {
+	const pacienteController = require('../src/controllers/pacienteController');
+	const originalCreate = Paciente.create;
+	let statusCode;
+	let responseBody;
+	const response = {
+		status(code) {
+			statusCode = code;
+			return this;
+		},
+		json(body) {
+			responseBody = body;
+			return this;
+		}
+	};
+
+	try {
+		await pacienteController.crear({
+			body: {
+				dni: '12345678',
+				nombre: 'Paciente',
+				apellido: 'Prueba',
+				patologia: 'Sin especificar',
+				dieta_asignada: 'General'
+			}
+		}, response);
+		assert.equal(statusCode, 400);
+		assert.match(responseBody.error, /habitación/i);
+
+		let createdValues;
+		Paciente.create = async values => {
+			createdValues = values;
+			return values;
+		};
+		statusCode = undefined;
+		await pacienteController.crear({
+			body: {
+				dni: '12345678',
+				nombre: 'Paciente',
+				apellido: 'Prueba',
+				habitacion: '12A',
+				patologia: 'Sin especificar',
+				dieta_asignada: 'General'
+			}
+		}, response);
+		assert.equal(statusCode, 201);
+		assert.equal(createdValues.habitacion, '12A');
+	} finally {
+		Paciente.create = originalCreate;
+	}
+});
+
+test('updating an ingredient stock minimum validates and saves the threshold', async () => {
+	const originalFindByPk = Alimento.findByPk;
+	let statusCode;
+	let responseBody;
+	const response = {
+		status(code) {
+			statusCode = code;
+			return this;
+		},
+		json(body) {
+			responseBody = body;
+			return this;
+		}
+	};
+
+	try {
+		await alimentoController.actualizarStockMinimo({ params: { id: '1' }, body: { stock_minimo: -1 } }, response);
+		assert.equal(statusCode, 400);
+		assert.match(responseBody.error, /stock mínimo/i);
+		statusCode = undefined;
+		await alimentoController.actualizarStockMinimo({ params: { id: '1' }, body: { stock_minimo: null } }, response);
+		assert.equal(statusCode, 400);
+
+		let savedMinimum;
+		Alimento.findByPk = async () => ({
+			async update(values) {
+				savedMinimum = values.stock_minimo;
+			}
+		});
+		statusCode = undefined;
+		await alimentoController.actualizarStockMinimo({ params: { id: '1' }, body: { stock_minimo: 2.5 } }, response);
+		assert.equal(statusCode, undefined);
+		assert.equal(savedMinimum, 2.5);
+		assert.equal(responseBody.mensaje, 'Stock mínimo actualizado.');
+	} finally {
+		Alimento.findByPk = originalFindByPk;
+	}
+});
+
+test('ingredient listing reports database failures instead of an empty stock list', async () => {
+	const originalFindAll = Alimento.findAll;
+	let statusCode;
+	let responseBody;
+	const response = {
+		status(code) {
+			statusCode = code;
+			return this;
+		},
+		json(body) {
+			responseBody = body;
+			return this;
+		}
+	};
+
+	try {
+		Alimento.findAll = async () => { throw new Error('database unavailable'); };
+		await alimentoController.listar({}, response);
+		assert.equal(statusCode, 500);
+		assert.match(responseBody.error, /stock del almacén/i);
+	} finally {
+		Alimento.findAll = originalFindAll;
+	}
+});
+
 test('auth rate limiter returns 429 after the configured limit', async t => {
 	const app = express();
 	app.get('/', createAuthRateLimiter({ windowMs: 60_000, limit: 2, message: 'rate limited' }), (req, res) => {
@@ -94,6 +212,8 @@ test('auth rate limiter returns 429 after the configured limit', async t => {
 test('Sequelize models map core tables and preserve required unique indexes', () => {
 	assert.equal(Usuario.getTableName(), 'usuarios_sistema');
 	assert.equal(Paciente.getTableName(), 'pacientes');
+	assert.equal(Paciente.rawAttributes.habitacion.allowNull, true);
+	assert.equal(Alimento.rawAttributes.stock_minimo.defaultValue, 0);
 	assert.equal(Paciente.associations.historialInternaciones.target, HistorialInternacion);
 	assert.equal(HistorialInternacion.associations.paciente.target, Paciente);
 	assert.equal(HistorialInternacion.associations.paciente.foreignKey, 'paciente_id');

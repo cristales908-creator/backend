@@ -24,7 +24,9 @@ La API escucha en el puerto definido por `PORT` (3000 por defecto). Las pruebas 
 
 ## Base de datos
 
-Al iniciar, Sequelize ejecuta `sequelize.sync()` para crear las tablas que falten según los modelos; no altera ni elimina las tablas existentes. No se usa `force` ni `alter`. Los cambios de esquema se reflejan en los modelos Sequelize. `sync()` no transforma datos existentes (por ejemplo, no normaliza nombres de dietas heredados); respaldá la base antes de hacer cambios manuales en el esquema o los datos.
+Al iniciar, Sequelize ejecuta `sequelize.sync({ alter: true })` según los modelos. Esto puede modificar columnas e índices existentes; respalda la base antes de desplegar cambios y usa migraciones revisadas para entornos con datos importantes. La sincronización no transforma los valores de negocio existentes (por ejemplo, no normaliza nombres de dietas heredados).
+
+La migración aditiva para habitación y stock mínimo está en [`migrations/20261117_add_habitacion_and_stock_minimo.sql`](migrations/20261117_add_habitacion_and_stock_minimo.sql). Agrega `pacientes.habitacion` como nullable para preservar registros previos y `alimentos.stock_minimo` con valor predeterminado `0`.
 
 ## Seguridad
 

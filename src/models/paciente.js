@@ -6,6 +6,7 @@ const Paciente = sequelize.define('Paciente', {
     dni: { type: DataTypes.STRING, unique: true, allowNull: false },
     nombre: { type: DataTypes.STRING, allowNull: false },
     apellido: { type: DataTypes.STRING, allowNull: false },
+    habitacion: { type: DataTypes.STRING, allowNull: true },
     patologia: { type: DataTypes.STRING },
     dieta_asignada: { type: DataTypes.STRING },
     estado_internacion: { type: DataTypes.STRING, defaultValue: 'Internado' },

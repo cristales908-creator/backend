@@ -40,14 +40,15 @@ async function listarConsumos(req, res) {
 }
 
 async function crear(req, res) {
-    const { dni, nombre, apellido, patologia, dieta_asignada, tiene_acompanante } = req.body || {};
+    const { dni, nombre, apellido, habitacion, patologia, dieta_asignada, tiene_acompanante } = req.body || {};
     const dietaCanonica = normalizeDiet(dieta_asignada);
     if (typeof dni !== 'string' || !dni.trim()
         || typeof nombre !== 'string' || !nombre.trim()
         || typeof apellido !== 'string' || !apellido.trim()
+        || typeof habitacion !== 'string' || !habitacion.trim() || habitacion.trim().length > 30
         || !PATOLOGIAS.includes(patologia)
         || !dietaCanonica) {
-        return res.status(400).json({ error: 'DNI, nombre, apellido, patología y dieta válidos son obligatorios.' });
+        return res.status(400).json({ error: 'DNI, nombre, apellido, habitación, patología y dieta válidos son obligatorios.' });
     }
 
     try {
@@ -55,6 +56,7 @@ async function crear(req, res) {
             dni: dni.trim(),
             nombre: nombre.trim(),
             apellido: apellido.trim(),
+            habitacion: habitacion.trim(),
             patologia,
             dieta_asignada: dietaCanonica,
             tiene_acompanante: tiene_acompanante === true,

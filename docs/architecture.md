@@ -57,7 +57,11 @@ Campos importantes de `consumos_menu`:
 
 `menus` guarda nombre, dieta, composición y estado activo. La aplicación valida que la dieta del menú coincida con la indicada para el paciente. La patología no selecciona automáticamente una dieta; esa decisión corresponde a Nutrición.
 
-`consumos` y `Alimento` pertenecen al flujo anterior de consumo de stock. La ruta `POST /api/alimentos/consumo` devuelve `410 Gone`: el flujo vigente es la planificación por menús y no descuenta gramos automáticamente.
+Los nuevos pacientes deben registrarse con una habitación (hasta 30 caracteres). El campo en la base de datos permite valores nulos para conservar pacientes preexistentes; la planificación y el reporte imprimible muestran `-` si un paciente antiguo aún no tiene habitación.
+
+Cada alimento tiene un `stock_minimo` en la misma unidad que su cantidad disponible. Enfermería puede editar ese mínimo; los productos existentes parten de cero y generan una alerta cuando se agotan. El panel de Enfermería revisa el stock al cargar y cada minuto, muestra los productos para reponer y notifica cuando alguno cruza el mínimo.
+
+`consumos` conserva registros históricos del flujo anterior de consumo individual. El flujo vigente permite registrar el uso de ingredientes mediante `POST /api/alimentos/consumo`: Enfermera, Nutricionista y Cocinera pueden seleccionar un alimento, cantidad y unidad. Para alimentos en gramos o kilogramos, el retiro se puede ingresar en cualquiera de esas dos unidades y se convierte a la unidad del stock antes del descuento. La operación descuenta el stock dentro de una transacción y registra la cantidad y unidad utilizadas en el historial del almacén.
 
 ## Flujo de una petición
 
@@ -85,7 +89,7 @@ Campos importantes de `consumos_menu`:
 | `/api/auth` | Registro de personal e inicio de sesión |
 | `/api/pacientes` | Consulta, alta, alta médica, reingreso y consumos históricos |
 | `/api/historial-pacientes` | Historial de internaciones y altas |
-| `/api/alimentos` | Consulta e ingreso de stock; la ruta antigua de consumo responde 410 |
+| `/api/alimentos` | Consulta, ingreso y retiro de stock, además del historial de movimientos |
 | `/api/menus` | Catálogo clínico, menús, asignaciones y cantidades para cocina |
 
 Endpoints del módulo de menús:
@@ -95,9 +99,9 @@ Endpoints del módulo de menús:
 | `GET /api/menus/opciones` | Catálogo de patologías, dietas y comidas |
 | `GET /api/menus` | Lista menús activos; acepta `?dieta=` |
 | `POST /api/menus` | Crea un menú (Nutricionista) |
-| `GET /api/menus/asignaciones?fecha=AAAA-MM-DD` | Lista asignaciones del día |
+| `GET /api/menus/asignaciones?fecha=AAAA-MM-DD` | Lista asignaciones del día con nombre, habitación, dieta y acompañante del paciente |
 | `POST /api/menus/asignaciones` | Crea o actualiza una asignación por paciente, fecha y comida |
-| `GET /api/menus/resumen?fecha=AAAA-MM-DD` | Agrupa por comida, dieta y menú; calcula porciones de pacientes, acompañantes y total |
+| `GET /api/menus/resumen?fecha=AAAA-MM-DD` | Agrupa por comida, dieta y menú y calcula las porciones. El frontend combina el resumen con las asignaciones para listar destinatarios y habitaciones, e imprimir el menú diario. |
 
 ## Configuración y ejecución
 
@@ -117,4 +121,4 @@ npm test
 
 ## Sincronización del esquema
 
-Al iniciar, Sequelize ejecuta `sequelize.sync()` usando los modelos y sus asociaciones para crear las tablas que falten. No se usan `force` ni `alter`, por lo que las tablas existentes no se eliminan ni se modifican automáticamente. El esquema se define en los modelos; `sync()` no transforma datos existentes, como nombres de dietas heredados. La conexión configurada con `DATABASE_URL` valida certificados TLS; para una CA privada, proporciona el PEM en `DB_SSL_CA`.
+Al iniciar, Sequelize ejecuta `sequelize.sync({ alter: true })` usando los modelos y sus asociaciones. Esta opción puede modificar columnas e índices existentes; respalda la base antes de desplegar cambios y prefiere migraciones revisadas en entornos con datos importantes. La sincronización no transforma valores de negocio existentes, como nombres de dietas heredados. La conexión configurada con `DATABASE_URL` valida certificados TLS; para una CA privada, proporciona el PEM en `DB_SSL_CA`.
