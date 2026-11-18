@@ -13,7 +13,7 @@ API REST de gestión hospitalaria con Node.js, Express, Sequelize y PostgreSQL.
 
 3. Copia `.env.example` a `.env` y completa la configuración local. Genera valores aleatorios de al menos 32 bytes para `SESSION_SECRET` y `STAFF_REGISTRATION_KEY`; los valores de ejemplo son rechazados. No subas `.env` a GitHub.
 
-   Puedes generar un secreto con `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. Si PostgreSQL remoto usa una autoridad certificadora propia, configura su certificado PEM en `DB_SSL_CA`.
+   Puedes generar un secreto con `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. Si usas `DATABASE_URL`, `DB_SSL_MODE` controla TLS: `verify-full` (predeterminado) valida el certificado y `DB_SSL_CA` permite indicar una CA privada. Para una conexión interna de Render en la misma región que el servicio, usa su **Internal Database URL** y configura `DB_SSL_MODE=require`; TLS se mantiene activo, pero no se valida el certificado autofirmado. Para una URL externa, conserva `verify-full`.
 4. Inicia el servidor:
 
    ```powershell

@@ -105,7 +105,7 @@ Endpoints del módulo de menús:
 
 ## Configuración y ejecución
 
-Las variables se leen desde `backend/.env`. Se usan `PORT`, configuración de PostgreSQL (`DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`) y secretos de sesión/registro. No copies valores secretos a este documento.
+Las variables se leen desde `backend/.env` o desde la configuración del servicio de despliegue. Para PostgreSQL local se usan `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` y `DB_PORT`. Para una conexión mediante `DATABASE_URL`, `DB_SSL_MODE` acepta `verify-full` (predeterminado; valida certificados) o `require` (cifra la conexión sin validar el certificado autofirmado). En Render, usa la URL interna cuando el servicio y la base estén en la misma región y configura `DB_SSL_MODE=require`; para conexiones externas, conserva `verify-full`. `DB_SSL_CA` permite proporcionar una CA privada cuando se requiere validación. No copies credenciales ni secretos a este documento.
 
 Desde la carpeta del backend:
 
